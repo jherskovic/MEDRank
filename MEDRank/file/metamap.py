@@ -1,0 +1,126 @@
+#!/usr/bin/env python
+# encoding: utf-8
+"""
+metamap.py
+Handles output from METAMAP; turns a METAMAP file into a nice set of chunked
+linelists (see nlm_output.py).
+
+The line parsers are quite intolerant, and throw exceptions on all malformed
+lines. The document parser tolerates the ones that aren't likely to impact
+parsing quality (i.e. no line id, because it means that there was an error
+message in the code or something similar).
+
+Created by Jorge Herskovic on 2008-05-13.
+Copyright (c) 2008 University of Texas - Houston. All rights reserved.
+"""
+
+from MEDRank.utility.logger import logging, ULTRADEBUG
+from MEDRank.file.nlm_output import (Line, ChunkedNLMOutput,
+                                     CUINotFoundError, ParsingError,
+                                     NoConfidenceError,
+                                     LineList)
+
+# Disable warnings about spaces before operators (they drive me crazy)
+# pylint: disable-msg=C0322    
+
+# These lines are known to be useless to the parser. We have gathered them 
+# here for the user's convenience.
+# pylint: disable-msg=C0103
+DEFAULT_LINES_TO_IGNORE=["<<<<< MMI", ">>>>> MMI", "*** ERROR ***"]
+
+
+class MetamapLine(Line):
+    """Represents a single line of METAMAP output"""
+    __slots__=['_cui', '_description', '_source', '_location', '_semtype']
+    def __init__(self, original_line):
+        Line.__init__(self, original_line, id_position=0)
+        # Unnecessary - done in the Line constructor
+        #line_breakup=self._line.split(self.split_char) 
+        try:
+            self._cui=self.split_line[4]
+        except IndexError:
+            raise CUINotFoundError("There was no CUI in the line '%s'" % 
+                                   self._line)
+        if self._cui=='':
+            raise CUINotFoundError("There was no CUI in the line '%s'" % 
+                                   self._line)
+        try:
+            self._description=self.split_line[3]
+            self._source=self.split_line[6]
+            self._semtype=self.split_line[5]
+        except IndexError:
+            raise ParsingError("Data missing from line '%s'" % self._line)
+        # Some entities have no stated confidence. We use 0 in such cases,
+        # so they can be eliminated from the workflow later.
+        try:
+            self.confidence=float(self.split_line[2])/1000.0
+        except ValueError:
+            raise NoConfidenceError("Could not parse a confidence value in "
+                                    "line '%s'" % self._line)
+        try:
+            locations=self.split_line[8].split(',')
+        except:
+            logging.debug("Could not find a location in line %s", self._line)
+            locations=[""]
+        locations=[x.split(':') for x in locations]
+        locations.sort()
+        # Use the first appearance of a term as its location
+        self._location=locations[0]
+        logging.log(ULTRADEBUG, "Created a MetamapLine @ %d: %s (%s) %1.3f", 
+                      self.line_id, self._cui,
+                      self._description, self.confidence)
+    # The CUI property.
+    def cui_fget(self):
+        "Getter for the CUI property"
+        return self._cui
+    CUI=property(cui_fget)
+    # The description property.
+    def description_fget(self):
+        "Getter for the description property"
+        return self._description 
+    description=property(description_fget)
+    # The source property.
+    def source_fget(self):
+        "Getter for the source property"
+        return self._source
+    source=property(source_fget)
+    def location_fget(self):
+        "Getter for the location property"
+        return self._location
+    location=property(location_fget)
+    def semantic_type_fget(self):
+        return self._semtype
+    semantic_type=property(semantic_type_fget)
+
+class MetamapLineList(LineList):
+    """Returns a list of MetamapLines sorted by their first appearance in the
+    text. It does this by comparing the location properties of the lines, which
+    are guaranteed to contain the first appearance of the text."""
+    @staticmethod
+    def sorter(x, y): return cmp(x.location, y.location)
+    def __init__(self, set_id, lines):
+        LineList.__init__(self, set_id, lines)
+        self._lines.sort(cmp=MetamapLineList.sorter)
+        
+# Creating graphs should be the responsibility of other classes
+# NOT of the input parsers, so if this parser only creates entities,
+# so be it
+
+class MetamapOutput(ChunkedNLMOutput):
+    """Represents a METAMAP output file."""
+    def __init__(self, fileobject, lines_to_ignore, chunkmap):
+        ChunkedNLMOutput.__init__(self, type_of_lines=MetamapLine,
+                                    fileobject=fileobject, 
+                                    lines_to_ignore=lines_to_ignore,
+                                    chunkmap=chunkmap,
+                                    type_of_line_set=MetamapLineList)
+    def ignore_exception(self, which_exception, on_which_line):
+        """Checks whether an exception generated by the parser is actionable
+        or if it should be ignored. We ignore CUINotFoundError, because it is
+        impossible to do anything in MEDRank without a CUI."""
+        if type(which_exception) is CUINotFoundError:
+            logging.log(ULTRADEBUG, "Skipping line '%s' because no CUI could "
+                        "be found on it" % on_which_line)
+            return True
+        return False
+

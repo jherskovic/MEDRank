@@ -1,0 +1,19 @@
+MEDRank v0.5.6
+
+© 2010 Jorge.R.Herskovic@uth.tmc.edu
+
+Released under the GPL v2 (see http://www.gnu.org/licenses/gpl-2.0.html)
+
+MEDRank is a ranking system meant to work on biomedical data, mostly UMLS 
+concepts. It also has facilities for performing basic IR evaluation, and one 
+semantically-aware vector cosine comparison (see MEDRank/evaluation).
+
+Requires Python 2.6 or 2.7 and BioPython (www.biopython.org) 
+
+Documentation will be forthcoming. MEDRank is meant to be a library you use to
+build your own rankers and evaluators. Sample code will be provided eventually. 
+In the meantime, please contact me if you need assistance.
+
+If you want to experiment with the biomedical literature you'll need to get a 
+copy of the MeSH trees (all files in the ASCII format) from 
+http://www.nlm.nih.gov/mesh/filelist.html 
