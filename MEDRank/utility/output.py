@@ -83,7 +83,10 @@ def output(output_file, result_queue, headers_callback=output_headers,
         result=result_set[pmid]
         item_callback(output_file, pmid, result, column_names)
         del result_set[pmid]
-    output_file.flush()
+    try:
+        output_file.flush()
+    except:
+        logging.warn("The output file object does not support flushing.")
     try:
         os.fsync(output_file.fileno())
     except:
