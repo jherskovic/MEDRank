@@ -13,7 +13,7 @@ import os
 from distutils.core import setup, Extension
 
 setup(name="MEDRank",
-      version='0.5.7',
+      version='0.5.8',
       author="Jorge R. Herskovic",
       author_email="jorge.r.herskovic@uth.tmc.edu",
       maintainer="Jorge R. Herskovic",
