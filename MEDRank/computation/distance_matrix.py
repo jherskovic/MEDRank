@@ -17,14 +17,18 @@ from MEDRank.computation.base_matrix import Matrix
 from ctypes import cdll, CDLL, byref
 # Disable warnings about spaces before operators (they drive me crazy)
 # pylint: disable-msg=C0322
-
-LIBRARY_LOCATION=os.path.join(sys.exec_prefix, 'lib', 
-                              'python'+sys.version[:3],
-                              'site-packages', 'MEDRank', 'computation',
-                              '_distmat.so')
-cdll.LoadLibrary(LIBRARY_LOCATION)
-DISTLIB=CDLL(LIBRARY_LOCATION)
-
+try:
+    LIBRARY_LOCATION=os.path.join(sys.exec_prefix, 'lib', 
+                                  'python'+sys.version[:3],
+                                  'site-packages', 'MEDRank', 'computation',
+                                  '_distmat.so')
+    cdll.LoadLibrary(LIBRARY_LOCATION)
+    DISTLIB=CDLL(LIBRARY_LOCATION)
+except:
+    DISTLIB=None
+    logging.warn("_distmat.so is not available; attempts to compute graph "
+                 "metrics will result in an exception.")
+                 
 class DistanceMatrix(object):
     """Represents a distance matrix, in which each C[i, j] encodes the 
     distance from i to j in a graph.
