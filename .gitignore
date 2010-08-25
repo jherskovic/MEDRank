@@ -17,3 +17,5 @@ MANIFEST
 build
 dist
 [*.so]
+*.*~
+#*#

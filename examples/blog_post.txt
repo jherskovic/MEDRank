@@ -1,0 +1,28 @@
+Sharing data with other institutions is a problem.
+HIPAA makes it difficult and cumbersome, and some patients fear for their privacy.
+Giving data to students is also encumbered for the same reasons. 
+And, frankly, much of it is due to fear: what if a students stores it on his/her laptop, unencrypted, and then loses it?
+There is no simple answer to these questions. 
+We take great care in protecting patient data.
+We spend money, time, and lots of elbow grease making sure it stays where it’s supposed to.
+Yet our students must learn, and we must do research.
+Enter the Data Fakehouse.
+This is a simple set of scripts that creates a simulated data warehouse. 
+It has a lot of simplifying assumptions, but it’s good enough for some kinds of research (specially into data mining techniques) and for teaching purposes. 
+Here are some of the more relevant simplifying assumptions:
+All diseases are chronic.
+Care is episodic. 
+In other words, this is an encounter-based setting, like an outpatient clinic.
+Patients have a condition from the start, or they don’t.
+Conditions don’t appear during the course of care.
+There’s a standard set of labs that is ordered every single time a patient with a condition visits. 
+You can think of vitals as ‘labs’ if that helps.
+The number of potential conditions is small. 
+This can be increased easily, if necessary.
+All lab values are normally distributed, both the normal and abnormal ones.
+We know the ground truth about whether a patient has a condition or not (great for computing sensitivity and specificity!)
+To run it, you’ll need PostgreSQL. 
+I only tested it on the 8.3 series, but pretty much any version greater than 8.0 should work. 
+You’ll also need Python 2.x (2.5 or greater should do the trick) and psycopg2.
+You will need to edit the create_db.sh script to fit your system, but with a minimal amount of UNIX experience it will be straightforward.
+Please let me know if you find it useful!
