@@ -37,9 +37,21 @@ def sentence_similarity(sentence1, sentence2):
     w1=[x.lower() for x in words.findall(sentence1)]
     w2=[x.lower() for x in words.findall(sentence2)]
     common=[x for x in w1 if x in w2]
-    if len(w1)+len(w2)==0:
+    # We need protection against 0-length words
+    lw1=len(w1)
+    lw2=len(w2)
+    if lw1==0:
+        llw1=0.0
+    else:
+        llw1=math.log10(lw1)
+    if lw2==0:
+        llw2=0.0
+    else:
+        llw2=math.log10(lw2)
+        
+    if llw1+llw2==0.0:
         return 0.0
-    return float(len(common))/(math.log10(len(w1))+math.log10(len(w2)))
+    return float(len(common))/(llw1+llw2)
     
 def sentence_pairs(sentences):
     pairs=set([])
