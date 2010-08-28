@@ -42,6 +42,7 @@ from MEDRank.utility import cache
 import sys
 import re
 import os.path
+import os
 import bz2
 import cPickle as pickle
 
@@ -61,9 +62,21 @@ known_opening_tags=re.compile(r"\<(cuis|names|connectivities|relations)\>",
 known_closing_tags=re.compile(r"\</(cuis|names|connectivities|relations)\>",
                               re.IGNORECASE)
 SEMPRED_CACHE=os.path.join(cache.path(), "sempred")
+                        
+def predication_filename(pubmed_id):
+    p=list(str(pubmed_id))
+    p, last_two=p[:-2], p[-2:]
+    ptuple=tuple(['_%s' % x for x in p])
+    if ptuple==():
+        return ''.join(last_two)
+    return os.path.join(os.path.join(*ptuple), ''.join(last_two))
                               
 def get_predications(pubmed_id, path=SEMPRED_CACHE):
-    filename=os.path.join(path, "%d.pickle.bz2" % pubmed_id)
+    filename=os.path.join(path, "%s.pickle.bz2" %
+                                 predication_filename(pubmed_id))
+    filedir=os.path.dirname(filename)
+    if not os.access(filedir, os.F_OK):
+        os.makedirs(filedir)
     return pickle.load(bz2.BZ2File(filename))
                               
 def handle_cuis(data):
