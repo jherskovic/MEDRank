@@ -11,12 +11,9 @@ Copyright (c) 2008 Jorge Herskovic. All rights reserved.
 """
 from MEDRank.utility.logger import logging, ULTRADEBUG
 import os
-import traceback
 import operator
 import sys
 import gc
-import cPickle as pickle
-import cStringIO as StringIO
 from multiprocessing import (Queue, JoinableQueue, cpu_count, Process, 
                              current_process)
 from MEDRank.file.disk_backed_dict import StringDBDict
@@ -80,7 +77,7 @@ def multi_processor(reader,
     proctitle.setproctitle("MEDRank-concept-cache")
 
     if umls_concept_data_filename is None:
-        Concept.init_storage(separate_process=True)
+        Concept.init_storage()
     else:
         Concept.init_storage(StringDBDict(umls_concept_data_filename))
     Pmid.init_storage()

@@ -14,7 +14,7 @@ message in the code or something similar).
 Created by Jorge Herskovic on 2008-05-27.
 Copyright (c) 2008 Jorge Herskovic. All rights reserved.
 """
-
+from MEDRank.file.chunkmap import FakeChunkmap
 from MEDRank.utility.logger import logging, ULTRADEBUG
 from MEDRank.file.nlm_output import (Line, ChunkedNLMOutput,
                                      CUINotFoundError, ParsingError,
@@ -76,7 +76,8 @@ class MtiLine(Line):
     
 class MtiOutput(ChunkedNLMOutput):
     """Represents an MTI output file."""
-    def __init__(self, fileobject, lines_to_ignore, chunkmap):
+    def __init__(self, fileobject, lines_to_ignore=DEFAULT_LINES_TO_IGNORE,
+                 chunkmap=FakeChunkmap()):
         ChunkedNLMOutput.__init__(self, type_of_lines=MtiLine,
                                     fileobject=fileobject, 
                                     lines_to_ignore=lines_to_ignore,

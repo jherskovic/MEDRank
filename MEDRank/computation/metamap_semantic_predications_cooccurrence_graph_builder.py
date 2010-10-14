@@ -15,6 +15,7 @@ from MEDRank.file.semantic_predications import get_predications
 from MEDRank.computation.metamap_cooccurrence_graph_builder import \
      MetamapCooccurrenceGraphBuilder
 from MEDRank.utility.logger import logging, ULTRADEBUG
+import traceback
 
 class MetamapSemanticPredicationsCooccurrenceGraphBuilder(
                 MetamapCooccurrenceGraphBuilder):
@@ -27,9 +28,10 @@ class MetamapSemanticPredicationsCooccurrenceGraphBuilder(
         logging.debug("Retrieving semantic predications for %r", 
                       self._line_set_id)
         try:
-            predications=get_predications(self._line_set_id.pmid)
+            predications=get_predications(self._line_set_id)
         except:
-            logging.warn("No predications for %r", self._line_set_id)
+            logging.warn("No predications for %r: an exception was raised.\n%s",
+                         self._line_set_id, traceback.format_exc())
             return new_graph
         logging.log(ULTRADEBUG, 
                     "Building a METAMAP co-occurrence graph from %r",

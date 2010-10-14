@@ -39,9 +39,11 @@ the concepts.
 from MEDRank.computation.node import Node
 from MEDRank.computation.link import Link
 from MEDRank.utility import cache
+from MEDRank.utility.logger import logging
 import sys
 import re
 import os.path
+import os
 import bz2
 import cPickle as pickle
 
@@ -61,10 +63,39 @@ known_opening_tags=re.compile(r"\<(cuis|names|connectivities|relations)\>",
 known_closing_tags=re.compile(r"\</(cuis|names|connectivities|relations)\>",
                               re.IGNORECASE)
 SEMPRED_CACHE=os.path.join(cache.path(), "sempred")
-                              
+
+def predication_filename(pubmed_id):
+    p=list(str(pubmed_id))
+    p, last_two=p[:-2], p[-2:]
+    ptuple=tuple(['_%s' % x for x in p])
+    if ptuple==():
+        fn=''.join(last_two)
+    else:
+        fn=os.path.join(os.path.join(*ptuple), ''.join(last_two))
+    logging.debug("Predication filename for %r=%s", pubmed_id, fn)
+    return fn
+
+def predications_name_and_path(pubmed_id, path):
+    filename=os.path.join(path, "%s.pickle.bz2" %
+                                 predication_filename(pubmed_id))
+    filedir=os.path.dirname(filename)
+    if not os.access(filedir, os.F_OK):
+        os.makedirs(filedir)
+    logging.debug("Fully-specced pathname for %r=%s", pubmed_id, filename)
+    return filename
+ 
+def old_predications_name_and_path(pubmed_id, path):
+    """Computes a name according to the original flat naming scheme."""
+    filename=os.path.join(path, "%d.pickle.bz2" % pubmed_id.pmid)
+    return filename
+    
 def get_predications(pubmed_id, path=SEMPRED_CACHE):
-    filename=os.path.join(path, "%d.pickle.bz2" % pubmed_id)
-    return pickle.load(bz2.BZ2File(filename))
+    try:
+        return pickle.load(bz2.BZ2File(predications_name_and_path(pubmed_id,
+                                                                  path)))
+    except IOError:
+        return pickle.load(bz2.BZ2File(old_predications_name_and_path(pubmed_id, 
+                                                                      path)))
                               
 def handle_cuis(data):
     return [x.strip().lower() for x in data]

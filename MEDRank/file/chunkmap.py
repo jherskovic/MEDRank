@@ -26,7 +26,7 @@ number.
 Created by Jorge Herskovic on 2008-05-13. 
 Copyright (c) 2008 Jorge Herskovic. All rights reserved.
 """
-
+import re
 from MEDRank.utility.logger import logging, ULTRADEBUG
 
 # pylint: disable-msg=F0401
@@ -68,6 +68,16 @@ class UselessChunkmap(BaseChunkmap):
         logging.log(ULTRADEBUG, "Creating UselessChunkmap")
     def pmid_from_block(self, chunknum):
         return Pmid(self[chunknum])
+    
+class FakeChunkmap(BaseChunkmap): 
+    def __init__(self):
+        BaseChunkmap.__init__(self, {})
+        self._number_finder=re.compile(r'\d+')
+    def pmid_from_block(self, chunknum):
+        num=self._number_finder.findall(str(chunknum))
+        if len(num) == 0:
+            raise KeyError("No chunk number found in %r" % chunknum)
+        return Pmid(num[0])
     
 def guess_chunkmap_type(a_dictionary):
     """Takes an educated guess at what type of chunkmap a dictionary is."""

@@ -29,16 +29,7 @@ import os.path
 import atexit
 from MEDRank.utility.logger import logging, ULTRADEBUG
 from MEDRank.file.disk_backed_dict import StringDBDict
-try:
-    from multiprocessing import Manager
-    multiprocessing_available=True
-except ImportError:
-    multiprocessing_available=False
-
-
-_DEFAULT_CONCEPT_STORAGE=os.path.join(sys.exec_prefix, "medrank_data",
-                                      "umls_concepts.db")
-_DEFAULT_CACHE_SIZE=10*(2**20) # 10 megabytes
+from MEDRank.umls import concept_cache
 
 # Concepts are implemented as Flyweight objects (see Design Patterns, p. 195)
 # crossed with Proxy objects. The only data actually stored is the CUI, but 
@@ -59,7 +50,6 @@ class NoConceptInfoError(Exception):
 
 class Concept(object):
     """Represents a UMLS concept by its CUI."""
-    __manager=None
     __storage=None
     __slots__=['__cui']
     def __init__(self, CUI):
@@ -74,43 +64,21 @@ class Concept(object):
         return self.__cui
     CUI=property(get_cui)
     @staticmethod
-    def init_storage(storage=None, separate_process=False):
+    def init_storage(storage_server=None):
         "Starts the storage manager for concept information"
-        if multiprocessing_available and separate_process:
-            if Concept.__manager is None:
-                logging.debug("Starting SyncManager to handle the Concept DB")
-                Concept.__manager=Manager()
-                logging.debug("Initializing shared namespace")
-                Concept.__storage=Concept.__manager.Namespace()
-                logging.debug("Namespace initialized")
-        else:
-            logging.debug("No multiprocessing - setting up a dummy manager")
-            class dummyManager(object):
-                pass
-            Concept.__storage=dummyManager()
-        # If there is indeed a storage in the multiprocessing 
-        # namespace, use that.
-        if storage is None:
-            logging.log(ULTRADEBUG, "Attempting to pass the default"
-                        " storage location as a StringDBDict to the"
-                        " namespace Manager.")
-            Concept.__storage.storage=\
-                    StringDBDict(_DEFAULT_CONCEPT_STORAGE,
-                                 cachesize=_DEFAULT_CACHE_SIZE)
-        else:
-            Concept.__storage.storage=storage
+        Concept.__storage=concept_cache.Client(concept_cache.DEFAULT_CACHE_HOST)
         logging.debug("Initialized Concept storage.")
     @staticmethod
     def close_storage():
-        Concept.__storage.storage=None
+        Concept.__storage=None
     def __getattr__(self, name):
         try:
-            return Concept.__storage.storage[self.__cui].__getattribute__(name)
+            return Concept.__storage.get_record(self.__cui).__getattribute__(name)
         except KeyError:
             try:
                 # Thanks to a bug in the original script, we have to try an
                 # uppercase version too.
-                return Concept.__storage.storage[self.__cui.upper()].__getattribute__(name)
+                return Concept.__storage.get_record(self.__cui.upper()).__getattribute__(name)
             except KeyError:
                 raise NoConceptInfoError("No info about %s in %r." % 
                                         (self.CUI, self.__storage))
@@ -122,11 +90,12 @@ class Concept(object):
     #storage = property(storage_fget)
     @staticmethod
     def get_all_names():
-        "SLOW OPERATION - reads all of the concept names into a single list."
-        if Concept.__storage is None:
-            Concept.init_storage()
-        return [x.concept_name 
-                for x in Concept.__storage.storage.itervalues()]
+        raise Exception("Procedure deprecated.")
+        #"SLOW OPERATION - reads all of the concept names into a single list."
+        #if Concept.__storage is None:
+        #    Concept.init_storage()
+        #return [x.concept_name 
+        #        for x in Concept.__storage.storage.itervalues()]
     def __getstate__(self):
         return self.__cui
     def __setstate__(self, state):

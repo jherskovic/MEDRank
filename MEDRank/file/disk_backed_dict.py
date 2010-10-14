@@ -123,9 +123,11 @@ class StringDBDict(DictMixin):
             self.my_store[real_key]=value
             self.write_counter+=1
             self.my_store[COUNTER_KEY]=str(self.write_counter) # Keep it updated
-            if self._sync_every != 0 and self.write_counter % self._sync_every == 0:
+            if self._sync_every != 0 and \
+                self.write_counter % self._sync_every == 0:
                 self.my_store.sync()
-            if self.write_counter % self.write_every == 0:
+            if self.write_every != 0 and \
+                self.write_counter % self.write_every == 0:
                 self.freeze()
         finally:
             #self.my_lock.release()

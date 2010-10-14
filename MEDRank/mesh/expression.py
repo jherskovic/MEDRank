@@ -116,3 +116,34 @@ class ExpressionList(list):
         for expr in self:
             flat|=set([x.term for x in expr.major_heading()])
         return [x for x in flat]
+
+def compare_flat_lists(flat_1, flat_2, tree):
+    terms_1=[tree.search(x) for x in flat_1]
+    terms_2=[tree.search(x) for x in flat_2]
+    matchterms=[]
+    for x in xrange(len(terms_1)):
+        for y in xrange(len(terms_2)):
+            if terms_1[x].any_matches(terms_2[y]):
+                matchterms.append((x, y))
+    match=[flat_1[x[0]] for x in matchterms]
+    not_match_1=set([flat_1[x] for x in xrange(len(flat_1)) 
+                     if x not in [y[0] for y in matchterms]])
+    not_match_2=set([flat_2[x] for x in xrange(len(flat_2))
+                     if x not in [y[1] for y in matchterms]])
+    not_match_1=list(not_match_1)
+    not_match_2=list(not_match_2)
+    return (match, not_match_1, not_match_2)
+    
+def compare_lists(list_1, list_2, tree):
+    """Compares two ExpressionLists by flattening them and using the MeSH
+    terms' synonyms list to determine whether the contents refer to the same
+    items or not. It turns out that MTI and MEDLINE might return synonyms, i.e.
+    one might say "breast cancer" while the other says "breast neoplasms".
+    That makes this kind of comparison necessary.
+    
+    Takes two lists and a MeSH tree. Returns a tuple with:
+    (identical items, unmatched items from list 1, unmatched items from list 2)
+    """
+    flat_1=list_1.flatten()
+    flat_2=list_2.flatten()
+    return compare_flat_lists(flat_1, flat_2, tree)
