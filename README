@@ -1,4 +1,4 @@
-MEDRank v0.5.9
+MEDRank v0.6.0
 
 © 2010 Jorge.R.Herskovic@uth.tmc.edu
 
@@ -24,3 +24,13 @@ if you need assistance.
 If you want to experiment with the biomedical literature you'll need to get a 
 copy of the MeSH trees (all files in the ASCII format) from 
 http://www.nlm.nih.gov/mesh/filelist.html 
+
+CHANGELOG
+v0.6.0
+    - Bug fixes galore
+    - Multithreaded locking for SQLite Dictionaries
+    - Separate concept and PubMed article server processes (requires web.py from http://webpy.org)
+
+RELEASE NOTES
+    Before starting a process that attempts to use the PubMed article cache or the Concept cache, you must start them individually. The scripts are in MEDRank/pubmed/pmid_cache.py and MEDRank/umls/concept_cache.py. They still have some rough edges.
+    
