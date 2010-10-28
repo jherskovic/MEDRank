@@ -84,10 +84,9 @@ class Link(object):
         return (self._node1==other._node1 and self._node2==other._node2)
     def __hash__(self):
         """We respect the order of the nodes here (not in AdirectionalLink)."""
-        n1=self._node1.node_id
-        n2=self._node2.node_id
-        node_ids="%s%s" % (n1, n2)
-        return hash(node_ids)
+        n1=hash(self._node1)
+        n2=hash(self._node2)
+        return (n1 << 2) ^ n2
 
 class AdirectionalLink(Link):
     """A link between two nodes in a graph, but without a direction.
@@ -115,10 +114,9 @@ class AdirectionalLink(Link):
         """Since the links are the same if the nodes pointed to are the same,
         regardless of order, we have to use a commutative operation to
         integrate the hashes."""
-        n1=min([self.node1.node_id, self.node2.node_id])
-        n2=max([self.node1.node_id, self.node2.node_id])
-        node_ids="%s%s" % (n1, n2)
-        return hash(node_ids)
+        n1=hash(self.node1)
+        n2=hash(self.node2)
+        return n1 ^ n2
     def __eq__(self, other):
         """Two links are the same if they point to the same nodes, in any
         same direction."""
