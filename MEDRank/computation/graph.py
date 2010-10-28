@@ -226,4 +226,22 @@ class Graph(object):
             output.append("%s %s %1.7f" % (node1, node2,
                                            a_relation.weight))
         return '\n'.join(output)
-        
+    def as_neato_file(self):
+        """Builds a neato file for use with GraphViz"""
+        replacements=' -[]{}()*&^%$#@()/?!\\|=+"\';:,.<>'
+        def clean(a_string, to_eliminate=replacements):
+            "Eliminate unwanted characters from a string. LGL is picky."
+            new_string=a_string
+            for each_one_to_eliminate in to_eliminate:
+                new_string=new_string.replace(each_one_to_eliminate, '_')
+            return new_string
+        self._consolidate_if_necessary()
+        output=["graph G {"]
+        for a_relation in self.relationships:
+            node1=clean(a_relation.node1.name)
+            node2=clean(a_relation.node2.name)
+            if node1==node2 or a_relation.weight==0: 
+                continue # Skip edges from a node to itself and 0-weight edges 
+            output.append("%s -- %s [weight=%1.2f];" % (node1, node2, a_relation.weight))
+        output.append("}")
+        return '\n'.join(output)

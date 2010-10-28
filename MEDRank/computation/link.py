@@ -85,11 +85,10 @@ class Link(object):
     def __hash__(self):
         """Since the links are the same if the nodes pointed to are the same,
         regardless of order, we have to use a commutative operation to
-        integrate the hashes. The python documentation suggests xor, so we'll
-        use that. """
-        node_ids="%s%s%s" % (self._node1.node_id, 
-                             type(self).__name__, 
-                             self._node2.node_id)
+        integrate the hashes."""
+        n1=min([self._node1.node_id, self._node2.node_id])
+        n2=max([self._node1.node_id, self._node2.node_id])
+        node_ids="%s%s" % (n1, n2)
         return hash(node_ids)
 
 class AdirectionalLink(Link):

@@ -71,11 +71,6 @@ def multi_processor(reader,
     logging.debug("Initializing Concept storage from %s", 
                   umls_concept_data_filename)
                   
-    # Since there's no direct way of setting the concept cache's title, 
-    # we set it here, wait for it to be inherited, and then get the 'real' 
-    # process title for this one. 
-    proctitle.setproctitle("MEDRank-concept-cache")
-
     if umls_concept_data_filename is None:
         Concept.init_storage()
     else:

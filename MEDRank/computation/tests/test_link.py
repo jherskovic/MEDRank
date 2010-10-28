@@ -41,6 +41,11 @@ class linkTests(unittest.TestCase):
         self.assertEqual(self.normalLink.name, "interesting_link")
         self.assertEqual("<Link interesting_link: 'a'--1.0000000-->'b'>",
                          repr(self.normalLink))
+    def testADirLinkRepresentation(self):
+        self.adirected=AdirectionalLink('a', 'b', -1.0)
+        self.assertEqual(repr(self.adirected), 
+                         "<Link: 'a'==1.0000000=='b'>")
+        
                          
 if __name__ == '__main__':
     unittest.main()

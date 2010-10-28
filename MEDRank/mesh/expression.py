@@ -117,6 +117,7 @@ class ExpressionList(list):
             flat|=set([x.term for x in expr.major_heading()])
         return [x for x in flat]
 
+# Do not use the following procedures!
 def compare_flat_lists(flat_1, flat_2, tree):
     terms_1=[tree.search(x) for x in flat_1]
     terms_2=[tree.search(x) for x in flat_2]

@@ -138,9 +138,12 @@ class SingleArticleWorkflow(SingleItemWorkflow):
             ranked_article=self.graph_and_rank(each_article)
         except CouldNotRank:
             return
+        logging.debug("Ranked article: %r", ranked_article)
         converted_terms=self.convert(ranked_article)
+        logging.debug("Converted terms: %r", converted_terms)
         cut_terms=converted_terms.terms_higher_than_or_equal_to(
                             self._ranking_cutoff)
+        logging.debug("Cut terms: %r", cut_terms)
         try:
             medline_record_mesh_terms=ExpressionList().from_medline(
                     each_article.set_id.article_record()['MH'])
@@ -162,9 +165,11 @@ class SingleArticleWorkflow(SingleItemWorkflow):
                                             flattened_terms)
         flattened_major_headings=\
             medline_record_mesh_terms.major_headings()
-        logging.debug("Original headings: %r Major headings: %r", 
-                        medline_record_mesh_terms,
-                        flattened_major_headings)
+        #logging.debug("Original headings: %r Major headings: %r", 
+        #                medline_record_mesh_terms,
+        #                flattened_major_headings)
+        logging.debug("Flattened MeSH terms: %r", flat_medline)
+        logging.debug("Flattened generated terms: %r", flattened_terms)
         mh_result_temp=self.perform_evaluation(each_article, self.evaluator,
                                                flattened_major_headings,
                                                flattened_terms)
