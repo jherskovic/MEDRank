@@ -1,4 +1,4 @@
-MEDRank v0.6.1
+MEDRank v0.6.2
 
 © 2010 Jorge.R.Herskovic@uth.tmc.edu
 
@@ -26,6 +26,9 @@ copy of the MeSH trees (all files in the ASCII format) from
 http://www.nlm.nih.gov/mesh/filelist.html 
 
 CHANGELOG
+v0.6.2
+    - Fixed a bug in naming output columns that could result in a NamedResultSet
+      ignoring the column_name property of a subclass.
 v0.6.1
     - Fixed a bug in link hashing and adirectional link hashing
     - Logging improvements in default workflows
