@@ -16,7 +16,7 @@ from result import Result
 class NamedResult(Result):
     def __init__(self, prefix, OriginalResult):
         Result.__init__(self, OriginalResult.result)
-        self.__original_class_name=OriginalResult.__class__.__name__
+        self.__original_class_name=OriginalResult.column_name()
         self.__prefix=prefix
     def column_name(self):
         return self.__prefix+self.__original_class_name
