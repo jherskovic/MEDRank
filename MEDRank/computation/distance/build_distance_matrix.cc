@@ -1,5 +1,5 @@
 #include <stdlib.h>
-//#include <omp.h>
+#include <omp.h>
 #include <vector>
 #include <map>
 #include <set>

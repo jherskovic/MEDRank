@@ -122,8 +122,13 @@ def multi_processor(reader,
     # CHANGED - Now uses multiple queues to avoid starving due to waiting on semlocks
     for each_article in reader:
         count+=1
+        #queues_and_sizes=[(task_queues[x].qsize(), x) 
+        #                  for x in xrange(num_processes)]
+        #queues_and_sizes.sort()
+        #target_process=queues_and_sizes[0][1]
         # logging.info("Dispatching article %d: %r", count, each_article)
         target_process=(count-1) % num_processes
+        #Lowest-loaded process first.
         logging.info("Dispatching article %d: %s to %s", 
                      count,
                      each_article.set_id,

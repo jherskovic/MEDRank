@@ -87,7 +87,17 @@ class Link(object):
         n1=hash(self._node1)
         n2=hash(self._node2)
         return (n1 << 2) ^ n2
-
+    def __getstate__(self):
+        return {'x': self._node1,
+                'y': self._node2,
+                'w': self._weight,
+                'n': self._name}
+    def __setstate__(self, state):
+        self._node1=state['x']
+        self._node2=state['y']
+        self._weight=state['w']
+        self._name=state['n']
+        
 class AdirectionalLink(Link):
     """A link between two nodes in a graph, but without a direction.
     Since the link is not directional, the link_strength's absolute value is

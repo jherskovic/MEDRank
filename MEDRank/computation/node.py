@@ -55,3 +55,15 @@ class Node(object):
         return self._node_id==other._node_id
     def __hash__(self):
         return hash(self.node_id)
+    # Pickle support for classes with slots requires get and setstate methods
+    def __getstate__(self):
+        return {'n': self._name,
+                'i': self._node_id,
+                'w': self._weight,
+                'o': self._original}
+    def __setstate__(self, state):
+        self._name=state['n']
+        self._node_id=state['i']
+        self._weight=state['w']
+        self._original=state['o']
+    

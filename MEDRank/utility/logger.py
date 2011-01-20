@@ -26,8 +26,13 @@ if not multiprocessing_available:
 ULTRADEBUG=DEBUG/2 # INSANE DETAIL LEVEL
 
 CH=StreamHandler()
-FORMATTER=Formatter('%(processName)s %(asctime)s %(levelname)s %(module)s.' \
-                      '%(funcName)s: %(message)s')
+if multiprocessing_available:
+    FORMATTER=Formatter('%(processName)s %(asctime)s %(levelname)s %(module)s.'\
+                        '%(funcName)s: %(message)s')
+else:
+    FORMATTER=Formatter('%(asctime)s %(levelname)s %(module)s.'\
+                        '%(funcName)s: %(message)s')
+    
 CH.setFormatter(FORMATTER)
 
 # pylint: disable-msg=C0103

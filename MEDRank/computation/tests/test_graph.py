@@ -115,12 +115,26 @@ class graphTests(unittest.TestCase):
                                   1.0)
     def test_ncol(self):
         self.fill_in_graph(self.test_graph, AdirectionalLink)
-        self.assertEquals(self.test_graph.as_ncol_file(), 
-        """Node0 Node1 1.0000000
+        self.assertEquals(set(self.test_graph.as_ncol_file().split('\n')), 
+        set("""Node0 Node1 1.0000000
 Node2 Node3 1.0000000
 Node1 Node2 1.0000000
 Node3 Node4 1.0000000
-Node3 Node0 1.0000000""")
+Node3 Node0 1.0000000""".split('\n')))
+    def test_node_access(self):
+        self.fill_in_graph(self.test_graph)
+        n=self.test_graph.nodes
+        self.assertEqual(n['1'].name, 'Node1')
+    def test_node_access_write_enabled(self):
+        self.fill_in_graph(self.test_graph)
+        n=self.test_graph.nodes
+        n['0'].name='blah'
+        self.assertEquals(set(self.test_graph.as_ncol_file().split('\n')), 
+                set("""blah Node1 1.0000000
+Node2 Node3 1.0000000
+Node1 Node2 1.0000000
+Node4 Node3 1.0000000
+Node3 blah 1.0000000""".split('\n')))
         
 if __name__ == '__main__':
     unittest.main()

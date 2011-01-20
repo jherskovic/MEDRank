@@ -12,11 +12,15 @@ Copyright (c) 2008 Jorge Herskovic. All rights reserved.
 
 from MEDRank.utility.logger import logging, ULTRADEBUG
 import operator
+import traceback
 from MEDRank.computation.link import AdirectionalLink
+from MEDRank.computation.link import Link
 from MEDRank.computation.mapped_link_matrix import MappedLinkMatrix
+from MEDRank.computation.node import Node
 from MEDRank.evaluation.result import Result
 from MEDRank.evaluation.result_set import ResultSet
 from MEDRank.computation.distance_matrix import DistanceMatrix
+from MEDRank.utility.output import HTMLEncode
 # Disable warnings about spaces before and after operators (they drive me crazy)
 # pylint: disable-msg=C0322, C0323
 
@@ -121,6 +125,18 @@ class Graph(object):
         # Return a defensive copy
         return [x for x in self._relationships]
     relationships=property(relationships_fget)
+    def nodes_fget(self):
+        """Returns a node_id->node dictionary containing the same nodes as the actual
+        graph."""
+        result={}
+        for r in self._relationships:
+            n1, n2=r.node1, r.node2
+            if n1.node_id not in result:
+                result[n1.node_id]=n1
+            if n2.node_id not in result:
+                result[n2.node_id]=n2
+        return result
+    nodes=property(nodes_fget)
     def consolidate_graph(self):
         """Turns the relationships stored temporarily into an actual graph.
         collision_handler specifies a callback that will be called if the 
@@ -139,8 +155,19 @@ class Graph(object):
             self._relationships.add(self.relationship_collision_handler(
                                         relset))
         self._temp_relationships={} # Delete the tempset
+        # Consolidate nodes by node_id, so there will only be one unique node 
+        # object per node_id in the graph.
+        canonical_nodes=self.nodes
+        for r in self._relationships:
+            n1, n2=r.node1, r.node2
+            r.node1=canonical_nodes[n1.node_id]
+            r.node2=canonical_nodes[n2.node_id]
+        
     def __repr__(self):
         return "<Graph: %r>" % self._relationships
+    def __str__(self):
+        """Pretty-printing method"""
+        return "\t" + '\n\t'.join([str(x) for x in self._relationships]) 
     def _consolidate_if_necessary(self):
         """Consolidates the graph if it's necessary, ignores the call 
         otherwise"""
@@ -245,3 +272,109 @@ class Graph(object):
             output.append("%s -- %s [weight=%1.2f];" % (node1, node2, a_relation.weight))
         output.append("}")
         return '\n'.join(output)
+    def as_graphml_file(self):
+        graph="""<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        <graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:y="http://www.yworks.com/xml/graphml" xmlns:yed="http://www.yworks.com/xml/yed/3" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://www.yworks.com/xml/schema/graphml/1.1/ygraphml.xsd">
+        <key for="graphml" id="d0" yfiles.type="resources"/>
+        %(keys)s
+        <graph edgedefault="directed" id="G">
+        %(nodes)s
+        %(edges)s
+        </graph>
+        <data key="d0">
+          <y:Resources/>
+        </data>
+        </graphml>
+        """
+
+        nodelabel="""<key for="node" id="%(keyid)s" yfiles.type="nodegraphics" />"""
+        edgelabel="""<key for="edge" id="%(keyid)s" yfiles.type="edgegraphics" />"""
+        nodeid="""<key for="node" id="%(keyid)s" attr.name="nodeid" attr.type="string" />"""
+        node="""<node id="%(nodeid)s">
+            <data key="%(keyid)s">
+                <y:ShapeNode>
+                   <y:NodeLabel>%(label)s</y:NodeLabel>
+                   <y:Shape type="ellipse" />
+                </y:ShapeNode>
+            </data>
+            <data key="%(idkeyid)s">%(nodeid)s</data>
+        </node>"""
+
+        edge="""<edge id="%(name)s" source="%(src)s" target="%(tgt)s">
+             <data key="%(keyid)s">
+                <y:PolyLineEdge>
+                  <y:Arrows source="none" target="standard"/>
+                  <y:EdgeLabel>%(label)s</y:EdgeLabel>
+                </y:PolyLineEdge>
+              </data>
+            </edge>"""
+        nodes={}
+        edges=[]
+        n=0
+        e=0
+
+        for l in self.relationships:
+            n1, rel, n2=l.node1, l.name, l.node2
+            if n1 not in nodes:
+                nodes[n1]=n
+                n=n+1
+            if n2 not in nodes:
+                nodes[n2]=n
+                n=n+1
+            edges.append(edge % {"name":  "e%d" % e,
+                                 "src":   "n%s" % n1.node_id,
+                                 "tgt":   "n%s" % n2.node_id,
+                                 "keyid": "ek%d" % e,
+                                 "label": HTMLEncode(rel)})
+            e=e+1
+        nodelist=[]
+        for nn in nodes:
+            nodelist.append(node % {"nodeid":  "n%s" % nn.node_id,
+                                 "keyid":   "nk%s" % nn.node_id,
+                                 "idkeyid": "ik%s" % nn.node_id,
+                                 "label":   HTMLEncode(nn.name)})
+
+        return graph % {"keys": '\n'.join(
+                            [nodelabel % {"keyid": "nk%s" % x.node_id} for x in nodes] + 
+                            [edgelabel % {"keyid": "ek%d" % x} for x in xrange(len(edges))] +
+                            [nodeid % {"keyid": "ik%s" % x.node_id} for x in nodes ]), 
+                        "nodes": '\n'.join(nodelist),
+                        "edges": '\n'.join(edges)
+                    }
+    def from_graphml_file(self, file_object, default_link=Link):
+        from xml.etree.ElementTree import iterparse
+        nodes={}
+        for event, element in iterparse(file_object):
+            if element.tag=="{http://graphml.graphdrawing.org/xmlns}node":
+                # The next line supports yEd's NodeLabel and Profuse's label
+                nodename=[x.text for x in element.getiterator() 
+                  if x.tag=="{http://www.yworks.com/xml/graphml}NodeLabel"] + \
+                         [x.text for x in element.getiterator()
+                  if x.tag=="{http://graphml.graphdrawing.org/xmlns}data"
+                  and x.get('key')=='label']
+                if len(nodename)==0:
+                    nodename=["NoName"]
+                nodes[element.get('id')]=Node(element.get('id'),
+                                              nodename[0],
+                                              1.0)
+            if element.tag=="{http://graphml.graphdrawing.org/xmlns}edge":
+                n1=nodes[element.get('source')]
+                n2=nodes[element.get('target')]
+                try:
+                    weight=[float(x.text) for x in element.getiterator() 
+                            if x.tag=='{http://graphml.graphdrawing.org/xmlns}data'
+                            and x.get('key')=='weight']
+                    weight=weight[0]
+                except:
+                    logging.warn('Failed at reading weight because of:\n%s', 
+                                 traceback.format_exc())
+                    weight=1.0
+                try:
+                    relname=[x.text for x in element.getiterator() 
+                        if x.tag=="{http://www.yworks.com/xml/graphml}EdgeLabel"
+                        ][0]
+                except IndexError:
+                    relname=""
+                self.add_relationship(default_link(n1, n2, weight, relname))
+        self.consolidate_graph()
+        return

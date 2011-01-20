@@ -3,14 +3,39 @@
 """
 output.py
 
+Contains output-related utilities for MEDRank.
+
 Created by Jorge Herskovic on 2010-07-02.
 Copyright (c) 2010 University of Texas - Houston. All rights reserved.
 """
 from csv import DictWriter
 import traceback
+import sys
 import os
 from MEDRank.utility import proctitle
 from MEDRank.utility.logger import logging, ULTRADEBUG
+import htmlentitydefs
+
+def HTMLEncode(a_string):
+    new_string=[]
+    for c in a_string:
+        if ord(c) in htmlentitydefs.codepoint2name:
+            new_string.append("&%s;" % htmlentitydefs.codepoint2name[ord(c)])
+        else:
+            new_string.append(c)
+    return ''.join(new_string)
+    
+def display_count(count, dot_threshold=1000, pipe_threshold=10000, 
+                  newline_threshold=50000, output_stream=sys.stderr):
+    if count % dot_threshold == 0:
+        output_stream.write(".")
+        output_stream.flush()
+    if count % pipe_threshold == 0:
+        output_stream.write("|")
+        output_stream.flush()
+    if count % newline_threshold == 0:
+        print >>output_stream, " %d" % count
+        output_stream.flush()
 
 def output_one_item(output_file, pmid, result, column_names):
     output_writer=DictWriter(output_file, 
