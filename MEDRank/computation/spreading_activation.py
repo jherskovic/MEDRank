@@ -19,9 +19,11 @@ class SpreadingActivation(Ranker):
        a maximum number of iterations, until convergence (as described by
        epsilon) or max_iterations is reached.
               
-       The only real difference between this and PageRank is the starting values
-       for the computation. For PageRank, they are 1. For SpreadingActivation,
-       they are whatever the e_vector starts them out with.
+       The only real differences between this and PageRank are:
+       -the starting values for the computation. For PageRank, they are 1. 
+        For SpreadingActivation, they are whatever the e_vector states.
+       -the e_vector does not feed into the nodes every iteration, unlike it
+       -does on PageRank
               
        Call the evaluate() method to start the evaluation. The evaluation 
        should always return normalized scores (i.e. between 0 and 1)"""
@@ -33,7 +35,8 @@ class SpreadingActivation(Ranker):
         # formulas may rely on instance data - hence it's not.
         return this_pagerank+previous_pagerank/num_outgoing_links
     def evaluate(self, linkmatrix, e_vector):
-        """Perform an iterative PageRank computation on a link matrix."""
+        """Perform an iterative Spreading Activation computation on a
+        link matrix."""
         # Cache commonly used values
         logging.log(ULTRADEBUG, "Setting up to compute PageRank on %r", linkmatrix)
         # Sanity check
@@ -92,8 +95,7 @@ class SpreadingActivation(Ranker):
                                                      pagerank_values[j],
                                                      this_pagerank,
                                                      count_outgoing_links[j])
-                new_pagerank_values[i]=(self._d*this_pagerank+
-                                        self._d*e_vector[i])
+                new_pagerank_values[i]=(self._d*this_pagerank)
                 accumulator+=abs(new_pagerank_values[i]-pagerank_values[i])
             iterations+=1
             pagerank_values=new_pagerank_values
@@ -108,5 +110,3 @@ class SpreadingActivation(Ranker):
             raise ValueError("PageRank returned all zeros.")
         # Normalize the scores
         return [x/highest for x in pagerank_values]
-
-ain()

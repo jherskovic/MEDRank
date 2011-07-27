@@ -378,3 +378,10 @@ class Graph(object):
                 self.add_relationship(default_link(n1, n2, weight, relname))
         self.consolidate_graph()
         return
+    def as_networkx_graph(self):
+        import networkx as nx
+        G=nx.Graph()
+        G.add_weighted_edges_from([
+            (l.node1.node_id, l.node2.node_id, l.weight)
+            for l in self.relationships])
+        return G
