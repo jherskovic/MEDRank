@@ -1,6 +1,6 @@
-MEDRank v0.6.2
+MEDRank v0.6.3
 
-© 2010 Jorge.R.Herskovic@uth.tmc.edu
+© 2011 Jorge.R.Herskovic@uth.tmc.edu
 
 Released under the GPL v2 (see http://www.gnu.org/licenses/gpl-2.0.html or the GPL-2.0.txt file included in this distribution).
 
@@ -8,7 +8,9 @@ MEDRank is a ranking system meant to work on biomedical data, mostly UMLS
 concepts. It also has facilities for performing basic IR evaluation, and one 
 semantically-aware vector cosine comparison (see MEDRank/evaluation).
 
-Requires Python 2.6 or 2.7 and BioPython (www.biopython.org) 
+Requires Python 2.6 or 2.7 and BioPython (www.biopython.org). 
+Parts work under jython 2.5.2, at least the Node, Link, and Graph classes, but 
+it hasn't been tested or used extensively under jython.
 
 Documentation will be forthcoming. MEDRank is meant to be a library you use to
 build your own rankers and evaluators. There is one example available in the
@@ -26,6 +28,16 @@ copy of the MeSH trees (all files in the ASCII format) from
 http://www.nlm.nih.gov/mesh/filelist.html 
 
 CHANGELOG
+v0.6.4
+    - Small bugfixes
+    - New Spreading Activation ranking function
+    - Added a very basic networkx export function to the Graph class
+v0.6.3
+    - Added pickle support for the Node and Link classes
+    - Added graphml export and import methods to the Graph class
+    - Modified the logger module to remove the process name from the formatter
+      under "no-multiprocessing" situations (likely to be jython)
+    - Added a couple of utility output functions 
 v0.6.2
     - Fixed a bug in naming output columns that could result in a NamedResultSet
       ignoring the column_name property of a subclass.
@@ -39,5 +51,5 @@ v0.6.0
     - Separate concept and PubMed article server processes (requires web.py from http://webpy.org)
 
 RELEASE NOTES
-    Before starting a process that attempts to use the PubMed article cache or the Concept cache, you must start them individually. The scripts are in MEDRank/pubmed/pmid_cache.py and MEDRank/umls/concept_cache.py. They still have some rough edges.
+    Before starting a process that attempts to use the PubMed article cache or the Concept cache, you must start them individually. The scripts are in MEDRank/pubmed/pmid_cache.py and MEDRank/umls/concept_cache.py. They still have many rough edges.
     
