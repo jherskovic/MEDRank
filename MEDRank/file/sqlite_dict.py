@@ -60,6 +60,8 @@ class SQLiteDict(DictMixin):
             self.__t.commit() # Commit immedately upon activation
     commits_enabled = property(commits_fget, commits_fset)
     def __getstate__(self):
+        # Since the main dictionary is already persistent, we just need
+        # to persist the metadata.
         return {'f': self.my_filename,
                 'p': self.my_persistence,
                 'c': self._commits_enabled,

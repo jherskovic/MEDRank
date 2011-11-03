@@ -277,6 +277,7 @@ class Graph(object):
         <graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:y="http://www.yworks.com/xml/graphml" xmlns:yed="http://www.yworks.com/xml/yed/3" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://www.yworks.com/xml/schema/graphml/1.1/ygraphml.xsd">
         <key for="graphml" id="d0" yfiles.type="resources"/>
         %(keys)s
+        <key id="ew" for="edge" attr.name="weight" attr.type="double" />
         <graph edgedefault="directed" id="G">
         %(nodes)s
         %(edges)s
@@ -289,6 +290,7 @@ class Graph(object):
 
         nodelabel="""<key for="node" id="%(keyid)s" yfiles.type="nodegraphics" />"""
         edgelabel="""<key for="edge" id="%(keyid)s" yfiles.type="edgegraphics" />"""
+        
         nodeid="""<key for="node" id="%(keyid)s" attr.name="nodeid" attr.type="string" />"""
         node="""<node id="%(nodeid)s">
             <data key="%(keyid)s">
@@ -307,6 +309,7 @@ class Graph(object):
                   <y:EdgeLabel>%(label)s</y:EdgeLabel>
                 </y:PolyLineEdge>
               </data>
+              <data key="ew">%(weight)f</data>
             </edge>"""
         nodes={}
         edges=[]
@@ -325,14 +328,15 @@ class Graph(object):
                                  "src":   "n%s" % n1.node_id,
                                  "tgt":   "n%s" % n2.node_id,
                                  "keyid": "ek%d" % e,
-                                 "label": HTMLEncode(rel)})
+                                 "weight": l.weight,
+                                 "label": "" if rel is None else HTMLEncode(rel)})
             e=e+1
         nodelist=[]
         for nn in nodes:
             nodelist.append(node % {"nodeid":  "n%s" % nn.node_id,
                                  "keyid":   "nk%s" % nn.node_id,
                                  "idkeyid": "ik%s" % nn.node_id,
-                                 "label":   HTMLEncode(nn.name)})
+                                 "label": "" if nn.name is None else HTMLEncode(nn.name)})
 
         return graph % {"keys": '\n'.join(
                             [nodelabel % {"keyid": "nk%s" % x.node_id} for x in nodes] + 
