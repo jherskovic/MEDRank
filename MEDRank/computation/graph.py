@@ -276,7 +276,12 @@ class Graph(object):
         graph="""<?xml version="1.0" encoding="UTF-8" standalone="no"?>
         <graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:y="http://www.yworks.com/xml/graphml" xmlns:yed="http://www.yworks.com/xml/yed/3" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://www.yworks.com/xml/schema/graphml/1.1/ygraphml.xsd">
         <key for="graphml" id="d0" yfiles.type="resources"/>
-        %(keys)s
+        <key for="node" id="d1" yfiles.type="nodegraphics" />
+        <key for="edge" id="d2" yfiles.type="edgegraphics" />
+        <key for="node" id="node_id" attr.name="MR_id" attr.type="string" />
+        <key for="edge" id="edge_id" attr.name="MR_id" attr.type="string" />
+        <key for="edge" id="edge_lbl" attr.name="description" attr.type="string" />
+        <key for="node" id="node_lbl" attr.name="description" attr.type="string" />        
         <key id="ew" for="edge" attr.name="weight" attr.type="double" />
         <graph edgedefault="directed" id="G">
         %(nodes)s
@@ -288,28 +293,27 @@ class Graph(object):
         </graphml>
         """
 
-        nodelabel="""<key for="node" id="%(keyid)s" yfiles.type="nodegraphics" />"""
-        edgelabel="""<key for="edge" id="%(keyid)s" yfiles.type="edgegraphics" />"""
-        
-        nodeid="""<key for="node" id="%(keyid)s" attr.name="nodeid" attr.type="string" />"""
         node="""<node id="%(nodeid)s">
-            <data key="%(keyid)s">
+            <data key="d1">
                 <y:ShapeNode>
                    <y:NodeLabel>%(label)s</y:NodeLabel>
                    <y:Shape type="ellipse" />
                 </y:ShapeNode>
             </data>
-            <data key="%(idkeyid)s">%(nodeid)s</data>
+            <data key="node_id">%(nodeid)s</data>
+            <data key="node_lbl">%(label)s</data>
         </node>"""
 
         edge="""<edge id="%(name)s" source="%(src)s" target="%(tgt)s">
-             <data key="%(keyid)s">
+             <data key="d2">
                 <y:PolyLineEdge>
                   <y:Arrows source="none" target="standard"/>
                   <y:EdgeLabel>%(label)s</y:EdgeLabel>
                 </y:PolyLineEdge>
               </data>
               <data key="ew">%(weight)f</data>
+              <data key="edge_id">%(name)s</data>
+              <data key="edge_lbl">%(label)s</data>
             </edge>"""
         nodes={}
         edges=[]
@@ -325,59 +329,59 @@ class Graph(object):
                 nodes[n2]=n
                 n=n+1
             edges.append(edge % {"name":  "e%d" % e,
-                                 "src":   "n%s" % n1.node_id,
-                                 "tgt":   "n%s" % n2.node_id,
-                                 "keyid": "ek%d" % e,
+                                 "src":   "%s" % n1.node_id,
+                                 "tgt":   "%s" % n2.node_id,
                                  "weight": l.weight,
                                  "label": "" if rel is None else HTMLEncode(rel)})
             e=e+1
         nodelist=[]
         for nn in nodes:
-            nodelist.append(node % {"nodeid":  "n%s" % nn.node_id,
-                                 "keyid":   "nk%s" % nn.node_id,
-                                 "idkeyid": "ik%s" % nn.node_id,
+            nodelist.append(node % {"nodeid":  "%s" % nn.node_id,
                                  "label": "" if nn.name is None else HTMLEncode(nn.name)})
 
-        return graph % {"keys": '\n'.join(
-                            [nodelabel % {"keyid": "nk%s" % x.node_id} for x in nodes] + 
-                            [edgelabel % {"keyid": "ek%d" % x} for x in xrange(len(edges))] +
-                            [nodeid % {"keyid": "ik%s" % x.node_id} for x in nodes ]), 
+        return graph % {
                         "nodes": '\n'.join(nodelist),
                         "edges": '\n'.join(edges)
                     }
     def from_graphml_file(self, file_object, default_link=Link):
         from xml.etree.ElementTree import iterparse
+        def get_subelement_data(elem, key):
+            result=[x.text for x in elem.getiterator()
+                    if x.tag=="{http://graphml.graphdrawing.org/xmlns}data"
+                    and x.get('key')==key]
+            if len(result)==0:
+                return None
+            return result[0]
         nodes={}
+        # Discover the names of the attributes we're looking for by investigating the keys
+        # Then actually read the file
+        keystore={}
         for event, element in iterparse(file_object):
+            #print element
+            if element.tag=="{http://graphml.graphdrawing.org/xmlns}key":
+                if element.get('attr.name') is None:
+                    continue
+                keystore[element.get('for')+'.'+element.get('attr.name')]=element.get('id')
+            # print keystore
             if element.tag=="{http://graphml.graphdrawing.org/xmlns}node":
                 # The next line supports yEd's NodeLabel and Profuse's label
-                nodename=[x.text for x in element.getiterator() 
-                  if x.tag=="{http://www.yworks.com/xml/graphml}NodeLabel"] + \
-                         [x.text for x in element.getiterator()
-                  if x.tag=="{http://graphml.graphdrawing.org/xmlns}data"
-                  and x.get('key')=='label']
-                if len(nodename)==0:
-                    nodename=["NoName"]
-                nodes[element.get('id')]=Node(element.get('id'),
-                                              nodename[0],
-                                              1.0)
+                nodename=get_subelement_data(element, keystore['node.description'])
+                if nodename is None:
+                    nodename="NoName"
+                nodekey=get_subelement_data(element, keystore['node.MR_id'])
+                nodes[element.get('id')]=Node(nodekey, nodename, 1.0)
             if element.tag=="{http://graphml.graphdrawing.org/xmlns}edge":
                 n1=nodes[element.get('source')]
                 n2=nodes[element.get('target')]
                 try:
-                    weight=[float(x.text) for x in element.getiterator() 
-                            if x.tag=='{http://graphml.graphdrawing.org/xmlns}data'
-                            and x.get('key')=='weight']
-                    weight=weight[0]
+                    weight=float(get_subelement_data(element, keystore['edge.weight']))
                 except:
                     logging.warn('Failed at reading weight because of:\n%s', 
                                  traceback.format_exc())
                     weight=1.0
                 try:
-                    relname=[x.text for x in element.getiterator() 
-                        if x.tag=="{http://www.yworks.com/xml/graphml}EdgeLabel"
-                        ][0]
-                except IndexError:
+                    relname=get_subelement_data(element, keystore['edge.description'])
+                except:
                     relname=""
                 self.add_relationship(default_link(n1, n2, weight, relname))
         self.consolidate_graph()
