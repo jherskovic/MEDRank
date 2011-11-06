@@ -8,6 +8,7 @@ Copyright (c) 2010 UTHSC School of Health Information Sciences. All rights reser
 """
 
 import unittest
+import numpy
 from MEDRank.computation.base_matrix import Matrix
 
 class test_base_matrix(unittest.TestCase):
@@ -18,13 +19,13 @@ class test_base_matrix(unittest.TestCase):
     | 19.3  1.1  1.1  4.5 -9.9 |
     |  2.7  0.1  0.1 -3.0  1.0 |"""
     def setUp(self):
-        self.m=Matrix(5)
+        self.m=Matrix(numpy.zeros([5, 5]))
         # Pull the matrix out of the docstring for the class. I'm lazy.
         rows=[x.strip() for x in self.__doc__.split('\n')]
         rows=[x for x in rows if x[0]=='|']
         rows=[[float(x) for x in y.strip('|').split()] for y in rows]
         for i in xrange(len(rows)):
-            self.m.set_row(i, rows[i])
+            self.m[i]=rows[i]
     def testConstruction(self):
         self.assert_(isinstance(self.m, Matrix))
         self.assertEquals(self.m[1, 1], 3.1)
@@ -49,18 +50,18 @@ class test_base_matrix(unittest.TestCase):
         self.assertEquals(self.m.col_nonzero(0), 4)
         self.assertEquals(self.m.row_nonzero(4), 5)
     def testTranspose(self):
-        t=self.m.transpose()
+        t=self.m.T
         for j in xrange(len(self.m)):
             for i in xrange(len(self.m)):
                 self.assertEquals(self.m[i, j], t[j, i])
     def testEquals(self):
         t=self.m.transpose()
-        tt=t.transpose()
-        self.assertEquals(self.m, tt)
+        tt=t.T
+        self.assertEquals((self.m==tt).all(), True)
     def testNormalize(self):
         norm=self.m.normalize()
         self.assertAlmostEquals(norm[3, 0], 1.0)
         self.assertAlmostEquals(norm[3, 2], 0.05699481865285)
-        
+
 if __name__ == '__main__':
     unittest.main()

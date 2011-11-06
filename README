@@ -1,6 +1,6 @@
-MEDRank v0.6.5
+MEDRank v0.7.0 alpha 1
 
-Â© 2011 Jorge.R.Herskovic@uth.tmc.edu
+© 2011 Jorge.R.Herskovic@uth.tmc.edu
 
 Released under the GPL v2 (see http://www.gnu.org/licenses/gpl-2.0.html or the GPL-2.0.txt file included in this distribution).
 
@@ -28,6 +28,15 @@ copy of the MeSH trees (all files in the ASCII format) from
 http://www.nlm.nih.gov/mesh/filelist.html 
 
 CHANGELOG
+v0.7.0alpha1
+	- Moved all matrix manipulation to NumPy code. I provide most, but not all,
+	  previous MEDRank functions in the Matrix class. Some code will need to be
+	  ported.
+	- All MEDRank graphs are now valid NetworkX graphs; MEDRank does no longer
+	  provides its own functionality if NetworkX does. 
+	- I provide MEDRank interfaces to NetworkX functionality, for backwards
+	  compatibility. 
+	- Support multi-dimensional representations 
 v0.6.5 
 	- Fixed the GraphML import code - now you can roundtrip a file to yED.  
 	  MEDRank will read it correctly, even if you modify it in yED.

@@ -18,11 +18,11 @@ import operator
 # pylint: disable-msg=C0103,C0111,R0904,W0212
 class graphTests(unittest.TestCase):
     def setUp(self):
-        """The basic test's graph structure will describe 5 
+        """The basic test graph structure will describe 5 
          nodes with the following links between them:
          (this is the same graph used to test the pagerankers)
              (0)-->(1)-->(2)-->(3)<--(4)
-              ↑            ╲__ ↗|
+              ↑            ╲__↗|
               └─────────────────┘
               
         Note that, even though the Nodes are different objects, their 
@@ -56,29 +56,11 @@ class graphTests(unittest.TestCase):
         self.fill_in_graph(self.test_graph)
         #self.assertEqual(5, len(self.test_graph._entities))
         # There should be 5 relationships, too (one should've been discarded)
-        self.assertEqual(5, len(self.test_graph._relationships))
-    def testAlternateRelationshipHandler(self):
-        class additiveRelHandler(Graph):
-            @staticmethod
-            def relationship_collision_handler(old_ones):
-                return Link(old_ones[0].node1, old_ones[0].node2, 
-                            reduce(operator.add, 
-                                [x.weight for x in old_ones]))
-        my_test_graph=additiveRelHandler()
-        self.fill_in_graph(my_test_graph)
-        #self.assertEqual(5, len(self.test_graph._entities))
-        # There should be 5 relationships, too (one should've been discarded)
-        self.assertEqual(5, len(my_test_graph._relationships))
-        # Get the corresponding node
-        changed_node=[x for x in my_test_graph._relationships 
-                      if x.node1.node_id=='2' and x.node2.node_id=='3'][0]
-        # Yes, retrieving nodes and links is very convoluted. I don't expect
-        # it to be a frequent operation.
-        self.assertEqual(changed_node.weight, 2.0)
+        self.assertEqual(5, len(self.test_graph.relationships))
     def testLinkMatrixConversion(self):
         self.fill_in_graph(self.test_graph)
         a_matrix=self.test_graph.as_mapped_link_matrix()
-        self.assert_(type(a_matrix) is MappedLinkMatrix)
+        self.assert_(isinstance(a_matrix, MappedLinkMatrix))
         from_node=Node('2', 'Node2', 1)
         to_node=Node('4', 'Node4', 1)
         self.assertEqual(a_matrix[a_matrix.get_term_position(from_node),
@@ -125,16 +107,6 @@ Node3 Node0 1.0000000""".split('\n')))
         self.fill_in_graph(self.test_graph)
         n=self.test_graph.nodes
         self.assertEqual(n['1'].name, 'Node1')
-    def test_node_access_write_enabled(self):
-        self.fill_in_graph(self.test_graph)
-        n=self.test_graph.nodes
-        n['0'].name='blah'
-        self.assertEquals(set(self.test_graph.as_ncol_file().split('\n')), 
-                set("""blah Node1 1.0000000
-Node2 Node3 1.0000000
-Node1 Node2 1.0000000
-Node4 Node3 1.0000000
-Node3 blah 1.0000000""".split('\n')))
         
 if __name__ == '__main__':
     unittest.main()

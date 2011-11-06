@@ -11,20 +11,26 @@ import unittest
 import sys
 sys.path.append('../')
 from distance_matrix import *
-from MEDRank.computation.link_matrix import LinkMatrix
+from MEDRank.computation.graph import Graph
+from MEDRank.computation.node import Node
 
 class test_distance_matrix(unittest.TestCase):
     def setUp(self):
         "Copied from test_link_matrix"
-        self.my_matrix=LinkMatrix(5) # Create a 5x5 link_matrix
+        self.my_graph=Graph() # Create a 5x5 link_matrix
         """Creates the following links:
             0    1--->2--->3    4
             │                   ↻
             └──────────────────↗"""
-        self.my_matrix[1, 2]=3
-        self.my_matrix[4, 4]=4
-        self.my_matrix[0, 4]=1
-        self.my_matrix[2, 3]=2
+        n0=Node(0, 0, 1)
+        n1=Node(1, 1, 1)
+        n2=Node(2, 2, 1)
+        n3=Node(3, 3, 1)
+        n4=Node(4, 4, 1)
+        self.my_graph.add_edge(n0, n4)
+        self.my_graph.add_edge(n1, n2)
+        self.my_graph.add_edge(n2, n3)
+        self.my_graph.add_edge(n4, n4)
     def testDistances(self):
         # The distances should be:
         # 0->4: 1
@@ -32,14 +38,14 @@ class test_distance_matrix(unittest.TestCase):
         # 2->3: 1
         # 1->3: 2
         # all others, 5 (the number of nodes)
-        dist=DistanceMatrix(self.my_matrix)
+        dist=DistanceMatrix(self.my_graph)
         self.assertEqual(dist[1,2], 1)
         self.assertEqual(dist[0,4], 1)
         self.assertEqual(dist[1,4], 5)
         self.assertEqual(dist[4,4], 0)
         self.assertEqual(dist[1,3], 2)
     def testAltUnreachableDistance(self):
-        dist=DistanceMatrix(self.my_matrix, -1)
+        dist=DistanceMatrix(self.my_graph, -1)
         self.assertEqual(dist[1,2], 1)
         self.assertEqual(dist[0,4], 1)
         self.assertEqual(dist[1,4], -1)
@@ -48,11 +54,11 @@ class test_distance_matrix(unittest.TestCase):
     def testOutDistance(self):
         """The out distance of 1 should be: 5+0+1+2+5 (the sum of all its
         distances)"""
-        dist=DistanceMatrix(self.my_matrix)
+        dist=DistanceMatrix(self.my_graph)
         self.assertEqual(13, dist.out_distance(1))
     def testInDistance(self):
         """The in distance of 4 should be: 1+5+5+5+0"""
-        dist=DistanceMatrix(self.my_matrix)
+        dist=DistanceMatrix(self.my_graph)
         self.assertEqual(16, dist.in_distance(4))
     def testRelativeOutCentrality(self):
         """The converted distance for the matrix should be (according to the
@@ -64,13 +70,13 @@ class test_distance_matrix(unittest.TestCase):
         4: 5+5+5+5+0=20
         so the total should be 16+13+16+20+20=85
         Which means that 2's relative out centrality would be 85/16=5.3125"""
-        dist=DistanceMatrix(self.my_matrix)
+        dist=DistanceMatrix(self.my_graph)
         self.assertEqual(5.3125, dist.relative_out_centrality(2))
     def testRelativeInCentrality(self):
-        dist=DistanceMatrix(self.my_matrix)
+        dist=DistanceMatrix(self.my_graph)
         self.assertEqual(5.3125, dist.relative_in_centrality(4))
     def testCompactness(self):
-        dist=DistanceMatrix(self.my_matrix)
+        dist=DistanceMatrix(self.my_graph)
         #Compactness is (max-converted_distance)/(max-min)
         the_max=(5**2-5)*5.0
         the_min=5**2-5.0
@@ -78,7 +84,7 @@ class test_distance_matrix(unittest.TestCase):
         self.assertEqual((the_max-converted_distance)/(the_max-the_min),
                          dist.compactness())
     def testStratum(self):
-        dist=DistanceMatrix(self.my_matrix)
+        dist=DistanceMatrix(self.my_graph)
         # The LAP for the matrix should be:
         # With an uneven N of 5, (5**3-5)/4=30
         # 0: 0+0+0+0+1=1
