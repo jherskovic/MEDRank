@@ -72,26 +72,6 @@ class Graph(nx.DiGraph):
     """Extends a NetworkX graph with MEDRank-specific functionality."""
     def __init__(self):
         nx.DiGraph.__init__(self)
-        # self._entities=set([])
-
-    # @staticmethod
-    # def entity_collision_handler(already_in_set, newcomer):
-        # """Default entity collision handler. Override to implement custom
-        # behavior.
-        # Reasonable operations would be adding the weights, choosing the
-        # largest, etc.
-        # The default collision_handler ignores the newcomer.
-        # Beware of changing this collision handler, as add_relationship
-        # ALWAYS tries to add every entity to the graph."""
-        # return already_in_set
-    # def add_entity(self, new_entity, collision_handler=None):
-        # """Takes an entity and adds it to the set of entities."""
-        # if new_entity in self._entities:
-            # old_entity=(self._entities & set([new_entity])).pop()
-            # self._entities.remove(old_entity)
-            # new_entity=self.entity_collision_handler(old_entity,
-            #                                          new_entity)
-        # self._entities.add(new_entity)
 
     def add_relationship(self, relationship):
         """Takes a Link and adds it to the set of relationships. This is just
@@ -107,12 +87,14 @@ class Graph(nx.DiGraph):
             self.add_edge(relationship.node2, relationship.node1)
             self[relationship.node2][relationship.node1]['MRLink'] = relationship
             self[relationship.node2][relationship.node1]['weight'] = relationship.weight
+    
     # The relationships property.
     def relationships_fget(self):
         "Getter for the relationships property."
         # Return a defensive copy
         return [self[x[0]][x[1]]['MRLink'] for x in self.edges()]
     relationships = property(relationships_fget)
+    
     def nodes_fget(self):
         """Returns a node_id->node dictionary containing the same nodes as the actual
         graph."""
@@ -121,18 +103,23 @@ class Graph(nx.DiGraph):
             result[r.node_id] = r
         return result
     nodes = property(nodes_fget)
+    
     def consolidate_graph(self):
         """NOP - nx does not require it."""
         return
+    
     def __repr__(self):
         return "<Graph: %r>" % self._relationships
+    
     def __str__(self):
         """Pretty-printing method"""
         return "\t" + '\n\t'.join([str(x) for x in self._relationships]) 
+    
     def _consolidate_if_necessary(self):
         """Consolidates the graph if it's necessary, ignores the call 
         otherwise"""
         return
+    
     def as_mapped_link_matrix(self):
         """Turns a graph into a MappedLinkMatrix"""
         # Build a set of all the known nodes
@@ -146,6 +133,7 @@ class Graph(nx.DiGraph):
                         nx.convert.to_numpy_matrix(self, nodes).view(MappedLinkMatrix))
         new_matrix.terms = nodes
         return new_matrix
+    
     def compute_measures(self):
         """Computes graph metrics for the current object."""
         # TODO: Replace with nx measures 
@@ -180,6 +168,7 @@ class Graph(nx.DiGraph):
         graph_measures.add(GraphCompactness(distmat.compactness()))
         logging.log(ULTRADEBUG, "Finished computing graph metrics.")
         return graph_measures
+    
     def as_ncol_file(self):
         """Builds an .ncol file for use in LGL (the Large Graph Layout 
         tool)"""
@@ -200,6 +189,7 @@ class Graph(nx.DiGraph):
             output.append("%s %s %1.7f" % (node1, node2,
                                            a_relation.weight))
         return '\n'.join(output)
+    
     def as_neato_file(self):
         """Builds a neato file for use with GraphViz"""
         replacements = ' -[]{}()*&^%$#@()/?!\\|=+"\';:,.<>'
@@ -219,6 +209,7 @@ class Graph(nx.DiGraph):
             output.append("%s -- %s [weight=%1.2f];" % (node1, node2, a_relation.weight))
         output.append("}")
         return '\n'.join(output)
+    
     def as_graphml_file(self):
         graph = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
         <graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:y="http://www.yworks.com/xml/graphml" xmlns:yed="http://www.yworks.com/xml/yed/3" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://www.yworks.com/xml/schema/graphml/1.1/ygraphml.xsd">
@@ -290,6 +281,7 @@ class Graph(nx.DiGraph):
                         "nodes": '\n'.join(nodelist),
                         "edges": '\n'.join(edges)
                     }
+    
     def from_graphml_file(self, file_object, default_link=Link):
         from xml.etree.ElementTree import iterparse
         def get_subelement_data(elem, key):
@@ -333,5 +325,7 @@ class Graph(nx.DiGraph):
                 self.add_relationship(default_link(n1, n2, weight, relname))
         self.consolidate_graph()
         return
+    
     def as_networkx_graph(self):
+        # Kept for backwards compatibility
         return self

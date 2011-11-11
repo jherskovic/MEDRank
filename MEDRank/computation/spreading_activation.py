@@ -8,10 +8,9 @@ Copyright (c) 2011 UTHSC School of Health Information Sciences. All rights reser
 """
 
 import time
-import copy
 from MEDRank.utility.logger import logging, ULTRADEBUG
-from MEDRank.computation.link_matrix import LinkMatrix
 from MEDRank.computation.ranker import (Ranker, RankerStats)
+import numpy
 
 class SpreadingActivation(Ranker):
     """Describes a SpreadingActivation ranker.
@@ -48,8 +47,8 @@ class SpreadingActivation(Ranker):
         # Precompute the total number of outgoing links for each node (this
         # is the number of non-zero entries in the node's row of the link
         # matrix)
-        count_outgoing_links=[linkmatrix.row_nonzero(x)
-                              for x in xrange(len(linkmatrix))]
+        count_outgoing_links=numpy.array([linkmatrix.row_nonzero(x)
+                              for x in xrange(len(linkmatrix))], dtype=numpy.int_)
         
         # The incoming links of each node are the nodes that point TO it, 
         # that is, for every lm[i,j]!=0 in the matrix there's an incoming
@@ -63,7 +62,7 @@ class SpreadingActivation(Ranker):
         # difference between successive iterations is smaller than epsilon.
         accumulator=2*self._e
         iterations=0
-        pagerank_values=copy.copy(e_vector)
+        activation_values=numpy.array(e_vector[:])
         logging.log(ULTRADEBUG, "Setup done. Beginning iterations.")
         
         # Use a normalized matrix for the actual computations
@@ -80,33 +79,35 @@ class SpreadingActivation(Ranker):
         while (accumulator>self._e):
             if iterations>self._max_iter:
                 logging.debug("Reached the iteration limit of %d. Ending the "
-                "PageRank computation prematurely.", self._max_iter)
+                "Spreading activation.", self._max_iter)
                 break
             accumulator=0.0
-            new_pagerank_values=pagerank_values[:]
+            new_activation_values=numpy.copy(activation_values)
             for i in xrange(len(linkmatrix)):
-                this_pagerank=0.0
+                activation=0.0
                 for j in incoming_links[i]:
-                    #this_pagerank+=((pagerank_values[j]*nm[j,i])/
+                    #activation+=((activation_values[j]*nm[j,i])/
                     #                count_outgoing_links[j])
-                    #this_pagerank+=(pagerank_values[j]/
+                    #activation+=(activation_values[j]/
                     #                count_outgoing_links[j])
-                    this_pagerank=self.inner_formula(normatrix[j, i],
-                                                     pagerank_values[j],
-                                                     this_pagerank,
+                    activation=self.inner_formula(normatrix[j, i],
+                                                     activation_values[j],
+                                                     activation,
                                                      count_outgoing_links[j])
-                new_pagerank_values[i]=(self._d*this_pagerank)
-                accumulator+=abs(new_pagerank_values[i]-pagerank_values[i])
+                # TODO: Fix this, activation not accumulating cleanly.
+                new_activation_values[i]=(self._d*activation)
+                accumulator+=abs(new_activation_values[i]-activation_values[i])
             iterations+=1
-            pagerank_values=new_pagerank_values
+            activation_values=new_activation_values
         finished_iter=time.clock()
         # Benchmarking and book-keeping
         self._latest_stats=RankerStats(iterations, accumulator, start,
                                         start_iter, finished_iter)
         
         logging.log(ULTRADEBUG, "Finished computation.")
-        highest=max(pagerank_values)
+        highest=max(activation_values)
         if highest==0.0:
-            raise ValueError("PageRank returned all zeros.")
+            raise ValueError("Spreading activation returned all zeros.")
         # Normalize the scores
-        return [x/highest for x in pagerank_values]
+        #return [x/highest for x in activation_values]
+        return activation_values

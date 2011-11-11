@@ -9,8 +9,8 @@ Copyright (c) 2008 University of Texas - Houston. All rights reserved.
 
 from MEDRank.utility.logger import logging, ULTRADEBUG
 import time
-from MEDRank.computation.link_matrix import LinkMatrix
 from MEDRank.computation.ranker import (Ranker, RankerStats)
+import numpy
 
 class PageRanker(Ranker):
     """Describes a PageRank ranker.
@@ -40,8 +40,9 @@ class PageRanker(Ranker):
         # Precompute the total number of outgoing links for each node (this
         # is the number of non-zero entries in the node's row of the link
         # matrix)
-        count_outgoing_links=[linkmatrix.row_nonzero(x)
-                              for x in xrange(len(linkmatrix))]
+        count_outgoing_links=numpy.array([linkmatrix.row_nonzero(x)
+                                          for x in xrange(len(linkmatrix))], 
+                                         dtype=numpy.int_)
         
         # The incoming links of each node are the nodes that point TO it, 
         # that is, for every lm[i,j]!=0 in the matrix there's an incoming
@@ -55,7 +56,7 @@ class PageRanker(Ranker):
         # difference between successive iterations is smaller than epsilon.
         accumulator=2*self._e
         iterations=0
-        pagerank_values=[1.0]*len(linkmatrix)
+        pagerank_values=numpy.ones(len(linkmatrix))
         logging.log(ULTRADEBUG, "Setup done. Beginning iterations.")
         
         # Use a normalized matrix for the actual computations
@@ -75,7 +76,7 @@ class PageRanker(Ranker):
                 "PageRank computation prematurely.", self._max_iter)
                 break
             accumulator=0.0
-            new_pagerank_values=pagerank_values[:]
+            new_pagerank_values=numpy.copy(pagerank_values)
             for i in xrange(len(linkmatrix)):
                 this_pagerank=0.0
                 for j in incoming_links[i]:

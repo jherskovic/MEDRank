@@ -10,7 +10,7 @@ Copyright (c) 2008 Jorge Herskovic. All rights reserved.
 import unittest
 import sys
 import numpy
-from MEDRank.computation.pageranker import *
+from MEDRank.computation.spreading_activation import *
 from MEDRank.computation.link_matrix import *
 
 # pylint: disable-msg=C0103,C0111,R0904        
@@ -25,7 +25,7 @@ class rankerTests(unittest.TestCase):
         nodes 0, 1, 2 in that order. 4 should be the lowest.
         """
         self.m=LinkMatrix(numpy.zeros([5,5])) # Create a 5x5 link_matrix
-        self.r=PageRanker(epsilon=1e-30)
+        self.r=SpreadingActivation(epsilon=1e-30)
         self.m[0, 1]=1
         self.m[1, 2]=1
         self.m[2, 3]=2
@@ -47,8 +47,15 @@ class rankerTests(unittest.TestCase):
         self.assert_(pr[1]>pr[2])
         self.assert_(pr[2]>pr[4])
         #print self.r.get_stats()
-    def testNormalization(self):
+    def testStartingConditions(self):
+        self.r._max_iter=-1 # No iterations will be attempted
         pr=self.r.evaluate(self.m, self.e)
-        self.assertEqual(pr[3], 1.0)
+        self.assertEqual(pr, [1.0, 1.0, 1.0, 1.0, 1.0])
+    def testSingleIteration(self):
+        self.r._max_iter=0
+        pr=self.r.evaluate(self.m, self.e)
+        print pr
+        self.assertEqual(pr, [1.0, 1.0, 1.0, 1.0, 1.0])
+    
 if __name__ == '__main__':
     unittest.main()
