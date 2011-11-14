@@ -32,22 +32,26 @@ class SpreadingActivation(Ranker):
         of PageRank."""
         # While the current formula could be a static method, other inner
         # formulas may rely on instance data - hence it's not.
-        return this_pagerank+previous_pagerank/num_outgoing_links
+        return this_pagerank + previous_pagerank / num_outgoing_links
     def evaluate(self, linkmatrix, e_vector):
         """Perform an iterative Spreading Activation computation on a
         link matrix."""
         # Cache commonly used values
         logging.log(ULTRADEBUG, "Setting up to compute PageRank on %r", linkmatrix)
         # Sanity check
-        if len(linkmatrix)==0:
+        if len(linkmatrix) == 0:
             raise ValueError("Attempting to PageRank an empty link matrix.")
-            
-        start=time.clock()
+        
+        if self._max_iter > 100:
+            logging.warn("Unusually large number of iterations (%d) for spreading activation."
+                         "I hope you know what you're doing!", self._max_iter)
+        
+        start = time.clock()
         
         # Precompute the total number of outgoing links for each node (this
         # is the number of non-zero entries in the node's row of the link
         # matrix)
-        count_outgoing_links=numpy.array([linkmatrix.row_nonzero(x)
+        count_outgoing_links = numpy.array([linkmatrix.row_nonzero(x)
                               for x in xrange(len(linkmatrix))], dtype=numpy.int_)
         
         # The incoming links of each node are the nodes that point TO it, 
@@ -56,58 +60,64 @@ class SpreadingActivation(Ranker):
         # traverse the neighborhood of every node looking for incoming links 
         # to each j. The easy way to do this is to transpose the matrix and
         # then get the neighborhoods
-        incoming_links=linkmatrix.transpose().all_neighbors()
+        incoming_links = linkmatrix.transpose().all_neighbors()
         
         # Set up the iteration - the PageRank computation ends when the 
         # difference between successive iterations is smaller than epsilon.
-        accumulator=2*self._e
-        iterations=0
-        activation_values=numpy.array(e_vector[:])
+        accumulator = 2 * self._e
+        iterations = 0
+        activation_values = numpy.array(e_vector[:])
         logging.log(ULTRADEBUG, "Setup done. Beginning iterations.")
         
         # Use a normalized matrix for the actual computations
         try:
-            normatrix=linkmatrix.normalize()
+            normatrix = linkmatrix.normalize()
         except ZeroDivisionError:
             raise ZeroDivisionError("Aberrant matrix: There are no links.")
-        start_iter=time.clock()
+        start_iter = time.clock()
         
         # Iterate until the difference between iterations is smaller than 
         # epsilon. In each iteration, go over every node, computing its 
         # PageRank based on the PageRank of the adjacent nodes (see the
         # Brin & Page paper for the formula)
-        while (accumulator>self._e):
-            if iterations>self._max_iter:
+        while (accumulator > self._e):
+            if iterations > self._max_iter:
                 logging.debug("Reached the iteration limit of %d. Ending the "
                 "Spreading activation.", self._max_iter)
                 break
-            accumulator=0.0
-            new_activation_values=numpy.copy(activation_values)
+            accumulator = 0.0
+            logging.log(ULTRADEBUG, "Iteration: %d, activation: %r", iterations, activation_values)
+            new_activation_values = numpy.copy(activation_values)
             for i in xrange(len(linkmatrix)):
-                activation=0.0
+                activation = 0.0
                 for j in incoming_links[i]:
                     #activation+=((activation_values[j]*nm[j,i])/
                     #                count_outgoing_links[j])
                     #activation+=(activation_values[j]/
                     #                count_outgoing_links[j])
-                    activation=self.inner_formula(normatrix[j, i],
+                    activation = self.inner_formula(normatrix[j, i],
                                                      activation_values[j],
                                                      activation,
                                                      count_outgoing_links[j])
                 # TODO: Fix this, activation not accumulating cleanly.
-                new_activation_values[i]=(self._d*activation)
-                accumulator+=abs(new_activation_values[i]-activation_values[i])
-            iterations+=1
-            activation_values=new_activation_values
-        finished_iter=time.clock()
+                new_activation_values[i] = new_activation_values[i] + (self._d * activation)
+                accumulator += abs(new_activation_values[i] - activation_values[i])
+            iterations += 1
+            # Test for infinity and abort the calculation if we overflow
+            if not numpy.isfinite(new_activation_values).all():
+                logging.warn("Spreading activation finished prematurely because of an overflow after iteration %d.",
+                             iterations)
+                break
+            activation_values = new_activation_values
+        finished_iter = time.clock()
         # Benchmarking and book-keeping
-        self._latest_stats=RankerStats(iterations, accumulator, start,
+        self._latest_stats = RankerStats(iterations, accumulator, start,
                                         start_iter, finished_iter)
         
         logging.log(ULTRADEBUG, "Finished computation.")
-        highest=max(activation_values)
-        if highest==0.0:
+        highest = max(activation_values)
+        if highest == 0.0:
             raise ValueError("Spreading activation returned all zeros.")
         # Normalize the scores
-        #return [x/highest for x in activation_values]
-        return activation_values
+        return [x/highest for x in activation_values]
+        

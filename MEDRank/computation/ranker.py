@@ -50,3 +50,10 @@ class Ranker(object):
         by this ranker."""
         return self._latest_stats
     stats=property(get_stats)
+    def get_max_iterations(self):
+        return self._max_iter
+    def set_max_iterations(self, number_iterations):
+        if number_iterations < 0:
+            raise ValueError("The number of iterations for a ranker should be positive.")
+        self._max_iter=number_iterations
+    max_iterations=property(get_max_iterations, set_max_iterations)
